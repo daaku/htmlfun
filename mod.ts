@@ -46,20 +46,7 @@
  */
 
 /**
- * Symbol that can be defined on a type for custom HTML generation.
- *
- * @example
- * ```ts
- * class Foo {
- *   #opts: string
- *   constructor(opts: string) {
- *     this.#opts = opts
- *   }
- *   [RenderHTML]() {
- *     return renderTag('name', this.#opts)
- *   }
- * }
- * ```
+ * Symbol used to define interface method for Renderable.
  */
 export const RenderHTML: unique symbol = Symbol.for('RenderHTML')
 
@@ -67,6 +54,22 @@ export const RenderHTML: unique symbol = Symbol.for('RenderHTML')
  * Implement to provide custom HTML rendering.
  */
 export interface Renderable {
+  /**
+   * This method can be defined to return HTML by any object.
+   *
+   * @example
+   * ```ts
+   * class Name {
+   *   #opts: string
+   *   constructor(opts: string) {
+   *     this.#opts = opts
+   *   }
+   *   [RenderHTML]() {
+   *     return renderTag('name', false, this.#opts)
+   *   }
+   * }
+   * ```
+   */
   [RenderHTML](): HTML
 }
 
