@@ -1,49 +1,71 @@
-// htmlfun is a succinct html generation library. It's very async.
-//
-// It is inspired by hiccup, gomponents and uses ideas that feel naturally
-// simple and I'm sure show up in many other places.
-//
-// Components are just reusable functions.
-//
-//   interface Card {
-//     name: string
-//     url: string
-//     pictureURL: string
-//   }
-//
-//   function renderCard(card: Card): HTML {
-//     return h.div(
-//       klass('card'),
-//       h.img(ha.src(card.pictureURL), ha.alt('Profile Picture')),
-//       h.a(ha.href(card.url), card.name),
-//     )
-//   }
-//
-//   interface CardSource {
-//     all(): Promise<Card[]>
-//   }
-//
-//   async function renderCards(source: CardSource): Promise<HTML[]> {
-//     return (await source.all()).map(renderCard)
-//   }
+/**
+ * Succinct, async HTML generation.
+ *
+ * Inspired by [hiccup](https://github.com/weavejester/hiccup) and
+ * [gomponents](https://github.com/maragudk/gomponents), with a twist: everything
+ * can be async, including streaming async iterators. Components are just
+ * reusable functions.
+ *
+ * @example
+ * ```ts
+ * import { h, ha, klass, renderString } from 'jsr:@daaku/htmlfun'
+ *
+ * interface Card {
+ *   name: string
+ *   url: string
+ *   pictureURL: string
+ * }
+ *
+ * function renderCard(card: Card) {
+ *   return h.div(
+ *     klass('card'),
+ *     h.img(ha.src(card.pictureURL), ha.alt('Profile Picture')),
+ *     h.a(ha.href(card.url), card.name),
+ *   )
+ * }
+ *
+ * await renderString(h.div(renderCard({
+ *   name: 'foo',
+ *   url: '/',
+ *   pictureURL: '/a.png',
+ * })))
+ * // => <div class="card"><img src="/a.png" alt="Profile Picture"><a href="/">foo</a></div>
+ * ```
+ *
+ * Async sources work out of the box:
+ *
+ * ```ts
+ * interface CardSource {
+ *   all(): Promise<Card[]>
+ * }
+ *
+ * async function renderCards(source: CardSource) {
+ *   return (await source.all()).map(renderCard)
+ * }
+ * ```
+ */
 
 /**
- * RenderHTML can be defined on a type to allow for custom HTML
- * generation. For example:
+ * Symbol that can be defined on a type for custom HTML generation.
  *
- *   class Foo {
- *     #opts: string
- *     constructor(opts: string) {
- *       this.#opts = opts
- *     }
- *     [RenderHTML]() {
- *       return renderTag('name', this.#opts)
- *     }
+ * @example
+ * ```ts
+ * class Foo {
+ *   #opts: string
+ *   constructor(opts: string) {
+ *     this.#opts = opts
  *   }
+ *   [RenderHTML]() {
+ *     return renderTag('name', this.#opts)
+ *   }
+ * }
+ * ```
  */
 export const RenderHTML: unique symbol = Symbol.for('RenderHTML')
 
-// Renderable can be implemented by types to provide custom HTML rendering.
+/**
+ * Implement to provide custom HTML rendering.
+ */
 export interface Renderable {
   [RenderHTML](): HTML
 }
@@ -51,13 +73,16 @@ export interface Renderable {
 const isRenderable = (o: any): o is Renderable =>
   typeof o?.[RenderHTML] === 'function'
 
-// renderable allows for using a function to defer rendering until required.
+/**
+ * Defer rendering with a function until required.
+ */
 export function renderable(f: () => HTML): Renderable {
   return { [RenderHTML]: f }
 }
 
-// Primitives are the raw renderable chunks coming out of `primitives`
-// async iterator. The strings here are escaped HTML ready for output.
+/**
+ * Raw chunk from `primitives`. Strings are escaped and ready for output.
+ */
 export type Primitive = string | Uint8Array
 
 const kindUnsafeHTML: unique symbol = Symbol.for('UnsafeHTML')
@@ -67,16 +92,19 @@ interface UnsafeHTML {
   value: string
 }
 
-// Provide Unsafe HTML that wont be subject to HTML escaping.
+/**
+ * Wrap pre-escaped HTML so it skips escaping.
+ */
 export function unsafeHTML(value: string): UnsafeHTML {
   return { kind: kindUnsafeHTML, value }
 }
 
 const isWrappedUnsafe = (o: any): o is UnsafeHTML => o?.kind === kindUnsafeHTML
 
-// HTML is a recursive type that can be flattened to a list of renderable
-// Primitives. They afford a lot of freedom and power and allow composing
-// functions of all kinds: standard, async, iterable, async iterable.
+/**
+ * Recursive value flattened by `primitives` into a stream of `Primitive`s.
+ * Composes standard, async, iterable, and async iterable values.
+ */
 export type HTML =
   | undefined
   | null
@@ -114,6 +142,17 @@ function escapeHTML(s: string) {
   })
 }
 
+/**
+ * Flatten `html` into escaped strings and raw `Uint8Array`s, streaming
+ * async iterables and awaiting promises as it goes.
+ *
+ * @example
+ * ```ts
+ * for await (const chunk of primitives(html)) {
+ *   // write to a response, socket, or file
+ * }
+ * ```
+ */
 export async function* primitives(html: HTML): AsyncIterable<Primitive> {
   // null and undefined
   if (html == null) return
@@ -173,6 +212,9 @@ export async function* primitives(html: HTML): AsyncIterable<Primitive> {
   throw new Error(`unable to process as HTML: ${html}`)
 }
 
+/**
+ * Render `html` to a string.
+ */
 export async function renderString(html: HTML): Promise<string> {
   let s = ''
   let decoder = new TextDecoder('utf-8')
@@ -200,14 +242,23 @@ type TagOp =
 const isTagOp = (o: any): o is TagOp =>
   o?.kind === tagOpPresence || o?.kind === tagOpSet || o?.kind === tagOpJoin
 
+/**
+ * Attribute rendered as a bare boolean flag, e.g. `disabled`.
+ */
 export function attrPresence(name: string): TagOp {
   return { kind: tagOpPresence, name }
 }
 
+/**
+ * Attribute rendered with a value, e.g. `href="..."`.
+ */
 export function attrSet(name: string, value: TagValue): TagOp {
   return { kind: tagOpSet, name, value }
 }
 
+/**
+ * Attribute that joins values with a space, merging with any existing value.
+ */
 export function attrJoin(
   name: string,
   value: string | string[],
@@ -215,13 +266,27 @@ export function attrJoin(
   return { kind: tagOpJoin, name, value }
 }
 
-// klass does the common operation of join css classes.
+/**
+ * Join CSS classes - the common `attrJoin('class', ...)` case.
+ */
 export function klass(value: string | string[]): TagOp {
   return attrJoin('class', value)
 }
 
+/**
+ * Sets an attribute value. If a value is not provided, just name will be in
+ * the output. This is for value-less attribues like `disabled` etc.
+ */
 export type AttrFunc = (value?: TagValue) => TagOp
 
+/**
+ * Attribute by name.
+ *
+ * @example
+ * ```ts
+ * h.img(ha.src('/a.png'), ha.alt('Profile Picture'), ha.disabled)
+ * ```
+ */
 export const ha: Record<string, AttrFunc> = new Proxy({}, {
   get(_target, prop, receiver) {
     return (value?: TagValue) => {
@@ -232,19 +297,52 @@ export const ha: Record<string, AttrFunc> = new Proxy({}, {
   },
 })
 
+/**
+ * Sets TagContent for a tag.
+ */
 export type TagFunc = (...content: TagContent[]) => HTML
 
+const selfClosingTags = [
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+]
+
+/**
+ * Tag by name.
+ *
+ * @example
+ * ```ts
+ * h.div(klass('card'), h.span('hi'))
+ * ```
+ */
 export const h: Record<string, TagFunc> = new Proxy({}, {
   get(_target, prop, receiver) {
     return (...content: TagContent[]) => {
       if (typeof prop === 'symbol') return receiver[prop]
-      return renderTag(prop, false, ...content)
+      const selfClose = selfClosingTags.includes(prop)
+      return renderTag(prop, selfClose, ...content)
     }
   },
 })
 
 type TagContent = TagOp | HTML
 
+/**
+ * Render a tag with attributes and content. With `selfClose`, omits the
+ * closing tag.
+ */
 export async function* renderTag(
   tag: string,
   selfClose: boolean,
