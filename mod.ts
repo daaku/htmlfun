@@ -220,7 +220,7 @@ export async function* primitives(html: HTML): AsyncIterable<Primitive> {
  */
 export async function renderString(html: HTML): Promise<string> {
   let s = ''
-  let decoder = new TextDecoder('utf-8')
+  const decoder = new TextDecoder('utf-8')
   for await (const each of primitives(html)) {
     if (typeof each === 'string') {
       s += each
