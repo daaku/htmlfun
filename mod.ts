@@ -1,4 +1,4 @@
-// h is a succinct html generation library. It's very async.
+// htmlfun is a succinct html generation library. It's very async.
 //
 // It is inspired by hiccup, gomponents and uses ideas that feel naturally
 // simple and I'm sure show up in many other places.
