@@ -22,7 +22,7 @@ jobs:
         run: |
           git config --global user.name 'Naitik Shah'
           git config --global user.email 'daaku@users.noreply.github.com'
-          deno bump-version
+          deno bump-version ${{ github.event.inputs.version }}
           git commit -am "v$(deno eval 'console.log(JSON.parse(Deno.readTextFileSync("./deno.json")).version)')"
           git tag "v$(deno eval 'console.log(JSON.parse(Deno.readTextFileSync("./deno.json")).version)')"
           git push --follow-tags
