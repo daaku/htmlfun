@@ -43,6 +43,7 @@
  *   return (await source.all()).map(renderCard)
  * }
  * ```
+ * @module
  */
 
 /**
