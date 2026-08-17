@@ -233,36 +233,36 @@ export async function renderString(html: HTML): Promise<string> {
   return s
 }
 
-const tagOpPresence: unique symbol = Symbol.for('tag-op-presence')
-const tagOpSet: unique symbol = Symbol.for('tag-op-set')
-const tagOpJoin: unique symbol = Symbol.for('tag-op-join')
+const attrOpPresence: unique symbol = Symbol.for('attr-op-presence')
+const attrOpSet: unique symbol = Symbol.for('attr-op-set')
+const attrOpJoin: unique symbol = Symbol.for('attr-op-join')
 
 /**
- * Tag values can be various primitives.
+ * Attr values can be various primitives.
  */
-export type TagValue = string | number | boolean
+export type AttrValue = string | number | boolean
 
 /** @internal */
-type TagOp =
-  | { kind: typeof tagOpPresence; name: string }
-  | { kind: typeof tagOpSet; name: string; value: TagValue }
-  | { kind: typeof tagOpJoin; name: string; value: string | string[] }
+type AttrOp =
+  | { kind: typeof attrOpPresence; name: string }
+  | { kind: typeof attrOpSet; name: string; value: AttrValue }
+  | { kind: typeof attrOpJoin; name: string; value: string | string[] }
 
-const isTagOp = (o: any): o is TagOp =>
-  o?.kind === tagOpPresence || o?.kind === tagOpSet || o?.kind === tagOpJoin
+const isAttrOp = (o: any): o is AttrOp =>
+  o?.kind === attrOpPresence || o?.kind === attrOpSet || o?.kind === attrOpJoin
 
 /**
- * Attribute rendered as a bare boolean flag, e.g. `disabled`.
+ * Attribute rendered as a bare attribute without value, e.g. `disabled`.
  */
-export function attrPresence(name: string): TagOp {
-  return { kind: tagOpPresence, name }
+export function attrPresence(name: string): AttrOp {
+  return { kind: attrOpPresence, name }
 }
 
 /**
  * Attribute rendered with a value, e.g. `href="..."`.
  */
-export function attrSet(name: string, value: TagValue): TagOp {
-  return { kind: tagOpSet, name, value }
+export function attrSet(name: string, value: AttrValue): AttrOp {
+  return { kind: attrOpSet, name, value }
 }
 
 /**
@@ -271,14 +271,14 @@ export function attrSet(name: string, value: TagValue): TagOp {
 export function attrJoin(
   name: string,
   value: string | string[],
-): TagOp {
-  return { kind: tagOpJoin, name, value }
+): AttrOp {
+  return { kind: attrOpJoin, name, value }
 }
 
 /**
  * Join CSS classes - the common `attrJoin('class', ...)` case.
  */
-export function klass(value: string | string[]): TagOp {
+export function klass(value: string | string[]): AttrOp {
   return attrJoin('class', value)
 }
 
@@ -286,7 +286,7 @@ export function klass(value: string | string[]): TagOp {
  * Sets an attribute value. If a value is not provided, just name will be in
  * the output. This is for value-less attribues like `disabled` etc.
  */
-export type AttrFunc = (value?: TagValue) => TagOp
+export type AttrFunc = (value?: AttrValue) => AttrOp
 
 /**
  * Attribute by name.
@@ -298,7 +298,7 @@ export type AttrFunc = (value?: TagValue) => TagOp
  */
 export const ha: Record<string, AttrFunc> = new Proxy({}, {
   get(_target, prop, receiver) {
-    return (value?: TagValue) => {
+    return (value?: AttrValue) => {
       if (typeof prop === 'symbol') return receiver[prop]
       if (typeof value === 'undefined') return attrPresence(prop)
       return attrSet(prop, value)
@@ -307,7 +307,7 @@ export const ha: Record<string, AttrFunc> = new Proxy({}, {
 })
 
 /**
- * Sets TagContent for a tag.
+ * Sets content for a tag.
  */
 export type TagFunc = (...content: TagContent[]) => HTML
 
@@ -349,7 +349,7 @@ export const h: Record<string, TagFunc> = new Proxy({}, {
 /**
  * Tag content can be an operation on the tag attributes or HTML content.
  */
-export type TagContent = TagOp | HTML
+export type TagContent = AttrOp | HTML
 
 /**
  * Render a tag with attributes and content. With `selfClose`, omits the
@@ -367,20 +367,20 @@ export async function* renderTag(
   const body = []
   for (const each of ops) {
     // collect html contents
-    if (!isTagOp(each)) {
+    if (!isAttrOp(each)) {
       body.push(each as HTML)
       continue
     }
 
     // process tag attributes
     switch (each.kind) {
-      case tagOpPresence:
+      case attrOpPresence:
         attrs[each.name] = true
         break
-      case tagOpSet:
+      case attrOpSet:
         attrs[each.name] = String(each.value)
         break
-      case tagOpJoin:
+      case attrOpJoin:
         const existing = attrs[each.name]
         if (existing && existing !== '') {
           if (Array.isArray(each.value)) {
