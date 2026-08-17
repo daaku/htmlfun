@@ -90,6 +90,7 @@ export type Primitive = string | Uint8Array
 
 const kindUnsafeHTML: unique symbol = Symbol.for('UnsafeHTML')
 
+/** @internal */
 interface UnsafeHTML {
   kind: typeof kindUnsafeHTML
   value: string
@@ -235,8 +236,12 @@ const tagOpPresence: unique symbol = Symbol.for('tag-op-presence')
 const tagOpSet: unique symbol = Symbol.for('tag-op-set')
 const tagOpJoin: unique symbol = Symbol.for('tag-op-join')
 
-type TagValue = string | number | boolean
+/**
+ * Tag values can be various primitives.
+ */
+export type TagValue = string | number | boolean
 
+/** @internal */
 type TagOp =
   | { kind: typeof tagOpPresence; name: string }
   | { kind: typeof tagOpSet; name: string; value: TagValue }
@@ -340,7 +345,10 @@ export const h: Record<string, TagFunc> = new Proxy({}, {
   },
 })
 
-type TagContent = TagOp | HTML
+/**
+ * Tag content can be an operation on the tag attributes or HTML content.
+ */
+export type TagContent = TagOp | HTML
 
 /**
  * Render a tag with attributes and content. With `selfClose`, omits the

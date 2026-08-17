@@ -10,3 +10,5 @@ jobs:
         with:
           cache-hash: ${{ hashFiles('**/deno.json') }}
       - run: deno test
+      - run: deno lint
+      - run: deno doc --lint *.ts
