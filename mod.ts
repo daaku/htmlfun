@@ -29,7 +29,7 @@
  *   url: '/',
  *   pictureURL: '/a.png',
  * })))
- * // => <div class="card"><img src="/a.png" alt="Profile Picture"><a href="/">foo</a></div>
+ * // => <div><div class="card"><img src="/a.png" alt="Profile Picture"><a href="/">foo</a></div></div>
  * ```
  *
  * Async sources work out of the box:
