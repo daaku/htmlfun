@@ -30,18 +30,59 @@
  */
 
 import { route, type Route } from '@std/http/unstable-route'
-import { h, ha, klass, primitives, unsafeHTML, type HTML } from './mod.ts'
+import {
+  h,
+  ha,
+  klass,
+  primitives,
+  renderString,
+  unsafeHTML,
+  type HTML,
+} from './mod.ts'
 
 // Inline SVG data URIs, so the example needs no external assets and no
-// network access beyond serving the pages themselves.
-function placeholderImage(label: string, fill: string, text: string): string {
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">` +
-    `<rect width="100%" height="100%" fill="${fill}"/>` +
-    `<text x="50%" y="50%" font-family="sans-serif" font-size="28" fill="${text}" ` +
-    `text-anchor="middle" dominant-baseline="middle">${label}</text>` +
-    `</svg>`
+// network access beyond serving the pages themselves. The SVG itself is
+// rendered with htmlfun instead of string concatenation.
+async function placeholderImage(
+  label: string,
+  fill: string,
+  text: string,
+): Promise<string> {
+  const svg = await renderString(
+    h.svg(
+      ha.xmlns('http://www.w3.org/2000/svg'),
+      ha.width(640),
+      ha.height(360),
+      h.rect(ha.width('100%'), ha.height('100%'), ha.fill(fill)),
+      h.text(
+        ha.x('50%'),
+        ha.y('50%'),
+        ha['font-family']('sans-serif'),
+        ha['font-size'](28),
+        ha.fill(text),
+        ha['text-anchor']('middle'),
+        ha['dominant-baseline']('middle'),
+        label,
+      ),
+    ),
+  )
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
+// Deferred async component: the placeholder is rendered when the page
+// streams, so pages stay plain synchronous functions. An async generator
+// sidesteps the recursive `Promise<HTML>` type, which TypeScript rejects.
+async function* imgPlaceholder(
+  label: string,
+  fill: string,
+  text: string,
+): AsyncGenerator<HTML> {
+  yield h.img(
+    ha.src(await placeholderImage(label, fill, text)),
+    ha.alt(`${label} placeholder`),
+    ha.width(640),
+    ha.height(360),
+  )
 }
 
 // CSS is wrapped in unsafeHTML so the style element isn't escaped.
@@ -89,12 +130,7 @@ function homePage(): HTML {
         h.code('@std/http'),
         '. Follow the link at the bottom to the second page.',
       ),
-      h.img(
-        ha.src(placeholderImage('Home page', '#e2e8f0', '#64748b')),
-        ha.alt('Placeholder image'),
-        ha.width(640),
-        ha.height(360),
-      ),
+      imgPlaceholder('Home page', '#e2e8f0', '#64748b'),
       h.h2('Dummy content'),
       h.p(
         klass('lorem'),
@@ -117,12 +153,7 @@ function aboutPage(): HTML {
         'You made it. This page renders a different htmlfun tree: a list of ',
         'things, an inline SVG placeholder, and a link back home.',
       ),
-      h.img(
-        ha.src(placeholderImage('Second page', '#dbeafe', '#1d4ed8')),
-        ha.alt('Another placeholder image'),
-        ha.width(640),
-        ha.height(360),
-      ),
+      imgPlaceholder('Second page', '#dbeafe', '#1d4ed8'),
       h.ul(
         h.li('Rendered on the fly for each request'),
         h.li('Streamed straight from htmlfun primitives'),
