@@ -141,6 +141,9 @@ function htmlResponse(html: HTML): Response {
     async start(controller) {
       try {
         for await (const chunk of primitives(html)) {
+          // Enqueueing many small chunks is fine: the stream buffers
+          // internally and Deno flushes each chunk to the socket as it
+          // arrives, so no manual buffering is needed for page-sized output.
           controller.enqueue(
             typeof chunk === 'string' ? encoder.encode(chunk) : chunk,
           )
