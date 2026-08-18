@@ -6,11 +6,13 @@
  * `primitives` async generator into a `ReadableStream`, so the server never
  * builds a full document string in memory.
  *
- * The `@std/http` dependency (declared in deno.json) is pinned to 0.224.5,
- * the last release with the classic `serve` function: it was removed from
- * the package when it moved to 1.0.0. Only `--allow-net` is needed to run
- * the server itself; `--allow-import` lets Deno fetch the pinned std
- * library dependency.
+ * The HTTP server itself is `Deno.serve` (native Deno); routing comes from
+ * the current `@std/http` via its `unstable-route` module. The classic
+ * `serve` function was removed from `@std/http` when it moved to 1.0.0, so
+ * it is no longer part of the std library. `unstable-route` is still marked
+ * experimental but needs no extra runtime flags. Only `--allow-net` is
+ * needed to run the server itself; `--allow-import` lets Deno fetch the
+ * std library dependency.
  *
  * Run it from the repository root:
  *
@@ -27,7 +29,7 @@
  * Then open http://localhost:56789
  */
 
-import { serve } from '@std/http'
+import { route, type Route } from '@std/http/unstable-route'
 import { h, ha, klass, primitives, unsafeHTML, type HTML } from './mod.ts'
 
 // Inline SVG data URIs, so the example needs no external assets and no
@@ -154,20 +156,21 @@ function htmlResponse(html: HTML): Response {
   })
 }
 
-const handler = (request: Request): Response => {
-  const url = new URL(request.url)
-  switch (url.pathname) {
-    case '/':
-      return htmlResponse(homePage())
-    case '/about':
-      return htmlResponse(aboutPage())
-    default:
-      return new Response('Not found', { status: 404 })
-  }
-}
+const routes: Route[] = [
+  {
+    pattern: new URLPattern({ pathname: '/' }),
+    handler: () => htmlResponse(homePage()),
+  },
+  {
+    pattern: new URLPattern({ pathname: '/about' }),
+    handler: () => htmlResponse(aboutPage()),
+  },
+]
+
+const notFound = (): Response => new Response('Not found', { status: 404 })
 
 const HOSTNAME = '0.0.0.0'
 const PORT = 56789
 
 console.log(`Listening on http://${HOSTNAME}:${PORT}`)
-await serve(handler, { hostname: HOSTNAME, port: PORT })
+Deno.serve({ hostname: HOSTNAME, port: PORT }, route(routes, notFound))
