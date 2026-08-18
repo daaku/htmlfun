@@ -3,6 +3,12 @@
   "version": "0.4.0",
   "license": "MIT",
   "exports": "./mod.ts",
+  "imports": {
+    "@std/http": "jsr:@std/http@0.224.5"
+  },
+  "tasks": {
+    "example": "deno run --allow-net --allow-import example.ts"
+  },
   "lint": {
     "rules": { "exclude": ["no-explicit-any", "no-case-declarations"] }
   }
