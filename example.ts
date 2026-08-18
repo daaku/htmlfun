@@ -175,5 +175,14 @@ const notFound = (): Response => new Response('Not found', { status: 404 })
 const HOSTNAME = '0.0.0.0'
 const PORT = 56789
 
-console.log(`Listening on http://${HOSTNAME}:${PORT}`)
-Deno.serve({ hostname: HOSTNAME, port: PORT }, route(routes, notFound))
+// Deno.serve logs its own "Listening on" message by default; a single
+// onListen callback replaces that default so it isn't printed twice.
+Deno.serve(
+  {
+    hostname: HOSTNAME,
+    port: PORT,
+    onListen: ({ hostname, port }) =>
+      console.log(`Listening on http://${hostname}:${port}`),
+  },
+  route(routes, notFound),
+)
