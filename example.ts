@@ -29,15 +29,15 @@
  * Then open http://localhost:56789
  */
 
-import { route, type Route } from '@std/http/unstable-route'
+import { type Route, route } from '@std/http/unstable-route'
 import {
   h,
   ha,
+  type HTML,
   klass,
   primitives,
   renderString,
   unsafeHTML,
-  type HTML,
 } from './mod.ts'
 
 // Inline SVG data URIs, so the example needs no external assets and no
@@ -69,15 +69,12 @@ async function placeholderImage(
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
 
-// Deferred async component: the placeholder is rendered when the page
-// streams, so pages stay plain synchronous functions. An async generator
-// sidesteps the recursive `Promise<HTML>` type, which TypeScript rejects.
-async function* imgPlaceholder(
+async function imgPlaceholder(
   label: string,
   fill: string,
   text: string,
-): AsyncGenerator<HTML> {
-  yield h.img(
+): Promise<HTML> {
+  return h.img(
     ha.src(await placeholderImage(label, fill, text)),
     ha.alt(`${label} placeholder`),
     ha.width(640),
@@ -106,18 +103,21 @@ const STYLES = unsafeHTML(`
 `)
 
 function layout(title: string, body: HTML): HTML {
-  return h.html(
-    h.head(
-      h.meta(ha.charset('utf-8')),
-      h.meta(
-        ha.name('viewport'),
-        ha.content('width=device-width, initial-scale=1'),
+  return [
+    unsafeHTML('<!doctype>'),
+    h.html(
+      h.head(
+        h.meta(ha.charset('utf-8')),
+        h.meta(
+          ha.name('viewport'),
+          ha.content('width=device-width, initial-scale=1'),
+        ),
+        h.title(title),
+        h.style(STYLES),
       ),
-      h.title(title),
-      h.style(STYLES),
+      h.body(body),
     ),
-    h.body(body),
-  )
+  ]
 }
 
 function homePage(): HTML {
@@ -134,10 +134,10 @@ function homePage(): HTML {
       h.h2('Dummy content'),
       h.p(
         klass('lorem'),
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' +
-          'Pellentesque habitant morbi tristique senectus et netus et malesuada ' +
-          'fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ' +
-          'ultricies eget, tempor sit amet, ante.',
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
+          + 'Pellentesque habitant morbi tristique senectus et netus et malesuada '
+          + 'fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, '
+          + 'ultricies eget, tempor sit amet, ante.',
       ),
       h.p(h.a(ha.href('/about'), 'Go to the second page →')),
     ),

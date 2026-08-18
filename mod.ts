@@ -118,9 +118,14 @@ export type HTML =
   | Uint8Array
   | UnsafeHTML
   | Renderable
-  | Promise<HTML>
+  | HTMLPromise
   | Iterable<HTML>
   | AsyncIterable<HTML>
+
+/**
+ * Exists to work around TypeScript error TS1062.
+ */
+export interface HTMLPromise extends Promise<HTML> {}
 
 const isAsyncIterable = (o: any): o is AsyncIterable<unknown> =>
   typeof o?.[Symbol.asyncIterator] === 'function'
