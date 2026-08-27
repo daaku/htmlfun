@@ -100,7 +100,10 @@ test('renderable defers rendering', async () => {
 
 test('RenderHTML enables custom rendering', async () => {
   class Widget {
-    constructor(private label: string) {}
+    label: string
+    constructor(label: string) {
+      this.label = label
+    }
     [RenderHTML]() {
       return h.span(this.label)
     }

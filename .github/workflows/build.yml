@@ -12,3 +12,4 @@ jobs:
       - run: deno test
       - run: deno lint
       - run: deno doc --lint *.ts
+      - run: node --test
