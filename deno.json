@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "license": "MIT",
   "exports": "./mod.ts",
-  "imports": { "@std/http": "jsr:@std/http@1.1.3" },
+  "imports": { "@std/http": "jsr:@std/http@1.1.4" },
   "tasks": {
     "example": "deno run --watch --allow-net --allow-import example.ts"
   },
